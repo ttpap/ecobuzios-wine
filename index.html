@@ -3,15 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<meta name="theme-color" content="#5b0e2d" />
-<title>Vendas & Estoque</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍷</text></svg>" />
+<meta name="theme-color" content="#2e8ba3" />
+<title>EcoBúzios · Vendas & Estoque</title>
+<link rel="icon" href="logo.png" />
+<link rel="apple-touch-icon" href="logo.png" />
 <style>
   :root{
-    --wine:#5b0e2d; --wine2:#7d1538; --gold:#c9a227; --bg:#faf7f5;
-    --card:#ffffff; --ink:#26161c; --muted:#8a7780; --line:#ece4e7;
+    --wine:#2e8ba3; --wine2:#1f6d82; --gold:#f0a93f; --bg:#f4f8fa;
+    --card:#ffffff; --ink:#1d3640; --muted:#728a93; --line:#e2ecef;
     --green:#1e7d5a; --green-bg:#e6f4ee; --red:#b3261e; --red-bg:#fbe9e7;
-    --shadow:0 1px 3px rgba(50,10,25,.08),0 8px 24px rgba(50,10,25,.06);
+    --shadow:0 1px 3px rgba(20,80,100,.08),0 8px 24px rgba(20,80,100,.07);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
@@ -22,15 +23,17 @@
   }
   /* ---------- Header / dashboard ---------- */
   header{
-    background:linear-gradient(135deg,var(--wine),var(--wine2));
-    color:#fff; padding:14px 16px 18px; position:sticky; top:0; z-index:20;
-    box-shadow:0 4px 18px rgba(50,10,25,.18);
+    background:#fff; padding:8px 14px 0; position:sticky; top:0; z-index:20;
+    box-shadow:0 2px 14px rgba(20,80,100,.07);
   }
-  .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;opacity:.95;margin-bottom:12px}
-  .brand .dot{margin-left:auto;font-size:11px;font-weight:600;opacity:.85;display:flex;align-items:center;gap:5px}
-  .dot .led{width:8px;height:8px;border-radius:50%;background:#9be6bf;box-shadow:0 0 0 0 rgba(155,230,191,.6);animation:pulse 2s infinite}
+  .topbar{display:flex;align-items:center;gap:10px;padding:4px 2px 10px}
+  .topbar .logo{height:36px;width:auto;display:block}
+  .topbar .dot{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .dot .led{width:8px;height:8px;border-radius:50%;background:#27c08a;box-shadow:0 0 0 0 rgba(39,192,138,.5);animation:pulse 2s infinite}
+  .dot.off{color:#c0392b}
   .dot.off .led{background:#e6a39b;animation:none}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(155,230,191,.6)}70%{box-shadow:0 0 0 7px rgba(155,230,191,0)}100%{box-shadow:0 0 0 0 rgba(155,230,191,0)}}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(39,192,138,.5)}70%{box-shadow:0 0 0 7px rgba(39,192,138,0)}100%{box-shadow:0 0 0 0 rgba(39,192,138,0)}}
+  .panel{background:linear-gradient(135deg,var(--wine),var(--wine2));border-radius:18px;padding:14px;color:#fff;box-shadow:0 6px 18px rgba(20,80,100,.2);margin-bottom:12px}
   .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .stat{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:10px 12px}
   .stat .lbl{font-size:11px;opacity:.85;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
@@ -155,15 +158,20 @@
 </head>
 <body>
 <header>
-  <div class="brand">🍷 Vendas &amp; Estoque <span class="dot" id="conn"><span class="led"></span><span id="connTxt">conectando…</span></span></div>
-  <div class="stats">
-    <div class="stat money"><div class="lbl">Arrecadado</div><div class="val" id="stMoney">R$ 0</div></div>
-    <div class="stat"><div class="lbl">Vendidos</div><div class="val" id="stQty">0</div></div>
-    <div class="stat"><div class="lbl">Em estoque</div><div class="val" id="stStock">0</div></div>
+  <div class="topbar">
+    <img class="logo" src="logo.png" alt="EcoBúzios" />
+    <span class="dot" id="conn"><span class="led"></span><span id="connTxt">conectando…</span></span>
   </div>
-  <div class="period">
-    <button data-per="hoje" class="on">Hoje</button>
-    <button data-per="tudo">Tudo</button>
+  <div class="panel">
+    <div class="stats">
+      <div class="stat money"><div class="lbl">Arrecadado</div><div class="val" id="stMoney">R$ 0</div></div>
+      <div class="stat"><div class="lbl">Vendidos</div><div class="val" id="stQty">0</div></div>
+      <div class="stat"><div class="lbl">Em estoque</div><div class="val" id="stStock">0</div></div>
+    </div>
+    <div class="period">
+      <button data-per="hoje" class="on">Hoje</button>
+      <button data-per="tudo">Tudo</button>
+    </div>
   </div>
 </header>
 
@@ -338,7 +346,7 @@ function stockBadge(p){
 function renderSell(){
   const g=$('#sellGrid')
   if(!produtos.length){
-    g.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e">🍷</div>Nenhum produto ainda.<br>Cadastre na aba <b>Estoque</b>.<br><button class="btn primary" onclick="window.__tab('estoque')">Cadastrar produto</button></div>`
+    g.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e">🛒</div>Nenhum produto ainda.<br>Cadastre na aba <b>Estoque</b>.<br><button class="btn primary" onclick="window.__tab('estoque')">Cadastrar produto</button></div>`
     return
   }
   g.innerHTML = produtos.map(p=>{
