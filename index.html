@@ -74,8 +74,17 @@
   .hrow .ht{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
   .hrow .hn{font-weight:700}
   .hrow .hv{margin-left:auto;font-weight:800;color:var(--green)}
+  .hrow .acts{display:flex;flex-direction:column;gap:2px}
   .undo{border:0;background:transparent;color:var(--red);font-weight:700;font-size:12px;padding:6px 8px;border-radius:8px}
   .undo:active{background:var(--red-bg)}
+  .fix{border:0;background:transparent;color:var(--wine);font-weight:700;font-size:12px;padding:6px 8px;border-radius:8px}
+  .fix:active{background:#f3e7ec}
+  /* lista de produtos no corrigir */
+  .corprod{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid var(--line);background:#fff;border-radius:13px;padding:13px 15px;margin-bottom:8px;font-size:16px;font-weight:700;color:var(--ink)}
+  .corprod:active{background:var(--bg);border-color:var(--wine)}
+  .corprod .corp{font-size:13px;font-weight:700;color:var(--muted)}
+  .corprod[disabled]{opacity:.45}
+  #corList{max-height:50vh;overflow:auto;margin:-4px 0 4px}
   /* ---------- Empty ---------- */
   .empty{text-align:center;color:var(--muted);padding:48px 20px}
   .empty .e{font-size:46px;margin-bottom:10px}
@@ -174,6 +183,18 @@
       <button class="btn primary" onclick="saveProduct()">Salvar</button>
     </div>
     <button class="danger-link" id="delBtn" style="display:none" onclick="deleteProduct()">Excluir produto</button>
+  </div>
+</div>
+
+<!-- Modal corrigir venda -->
+<div class="scrim" id="corScrim" onclick="if(event.target===this)window.__corrClose()">
+  <div class="sheet">
+    <h3 id="corTitle">Corrigir venda</h3>
+    <p style="margin:-8px 0 14px;color:var(--muted);font-size:14px">Escolha o produto certo. O errado volta ao estoque e a mesma quantidade é vendida do novo.</p>
+    <div id="corList"></div>
+    <div class="actions">
+      <button class="btn ghost block" onclick="window.__corrClose()">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -318,7 +339,10 @@ function renderHist(){
         <div class="ht">${t}</div>
       </div>
       <div class="hv">${BRL(v.total)}</div>
-      <button class="undo" onclick="window.__undo('${v.id}')">desfazer</button>
+      <div class="acts">
+        <button class="fix" onclick="window.__corrigir('${v.id}')">corrigir</button>
+        <button class="undo" onclick="window.__undo('${v.id}')">desfazer</button>
+      </div>
     </div>`
   }).join('')
 }
@@ -327,6 +351,45 @@ window.__undo = async (id)=>{
   const { error } = await sb.rpc('desfazer_venda',{ p_venda_id:id })
   if(error){ toast('Erro ao desfazer','err'); return }
   toast('Venda desfeita','ok'); loadProdutos(); loadVendas()
+}
+
+// ---------- corrigir venda (troca produto, mesma qtd) ----------
+let corrigindo = null
+window.__corrigir = (vendaId)=>{
+  const v = vendas.find(x=>x.id===vendaId); if(!v) return
+  corrigindo = v
+  $('#corTitle').textContent = `Corrigir: ${v.nome_produto}${v.qtd>1?' ×'+v.qtd:''}`
+  $('#corList').innerHTML = produtos.length
+    ? produtos.map(p=>{
+        const mesmo = p.id===v.produto_id
+        const semEstoque = p.estoque < v.qtd
+        const dis = mesmo || semEstoque
+        return `<button class="corprod" ${dis?'disabled':''} onclick="window.__corrSwap('${p.id}')">
+          <span>${esc(p.nome)}${mesmo?' (atual)':''}</span>
+          <span class="corp">${BRL(p.preco)} · ${semEstoque?'sem estoque':p.estoque+' un'}</span>
+        </button>`
+      }).join('')
+    : '<div class="empty">Nenhum produto.</div>'
+  $('#corScrim').classList.add('on')
+}
+window.__corrClose = ()=>{ $('#corScrim').classList.remove('on'); corrigindo=null }
+window.__corrSwap = async (newId)=>{
+  const v = corrigindo; if(!v) return
+  const p = produtos.find(x=>x.id===newId)
+  // 1) desfaz a venda errada (devolve estoque)
+  const { error:e1 } = await sb.rpc('desfazer_venda',{ p_venda_id:v.id })
+  if(e1){ toast('Erro ao corrigir','err'); return }
+  // 2) vende o certo, mesma quantidade
+  const { error:e2 } = await sb.rpc('vender',{ p_produto_id:newId, p_qtd:v.qtd })
+  if(e2){
+    // falhou: refaz a venda original pra nao perder o registro
+    if(v.produto_id) await sb.rpc('vender',{ p_produto_id:v.produto_id, p_qtd:v.qtd })
+    toast(e2.message||'Falha ao trocar','err')
+    loadProdutos(); loadVendas(); return
+  }
+  toast(`Corrigido para ${p?p.nome:'produto'}`,'ok')
+  if(navigator.vibrate) navigator.vibrate(18)
+  window.__corrClose(); loadProdutos(); loadVendas()
 }
 
 // ---------- modal produto ----------
