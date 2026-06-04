@@ -85,6 +85,39 @@
   .corprod .corp{font-size:13px;font-weight:700;color:var(--muted)}
   .corprod[disabled]{opacity:.45}
   #corList{max-height:50vh;overflow:auto;margin:-4px 0 4px}
+  /* ---------- Relatorio ---------- */
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .chips button{border:1.5px solid var(--line);background:#fff;color:var(--muted);font-weight:700;font-size:13px;padding:8px 14px;border-radius:999px}
+  .chips button.on{background:var(--wine);color:#fff;border-color:var(--wine)}
+  .daterow{display:flex;gap:10px;margin-bottom:16px}
+  .daterow>div{flex:1}
+  .daterow label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  .daterow input{width:100%;border:1.5px solid var(--line);border-radius:11px;padding:11px;font-size:15px;font-weight:600;color:var(--ink);background:#fff}
+  .rcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+  .rcard-h{font-weight:800;font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .rrange{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted)}
+  .rmoney>div{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:15px}
+  .rmoney .l{color:var(--muted);font-weight:600}
+  .rmoney .v{font-weight:800;font-variant-numeric:tabular-nums}
+  .rmoney .v.neg{color:var(--red)}
+  .rmoney .liq{border-top:1px dashed var(--line);margin-top:4px;padding-top:11px}
+  .rmoney .liq .l{color:var(--ink);font-weight:800}
+  .rmoney .liq .v{color:var(--green);font-size:20px}
+  .taxaset{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+  .taxaset input{width:58px;border:1.5px solid var(--line);border-radius:9px;padding:7px;font-size:14px;font-weight:700;text-align:center;color:var(--ink)}
+  .mini{border:0;background:var(--wine);color:#fff;font-weight:700;font-size:12px;padding:7px 12px;border-radius:9px;margin-left:auto}
+  .prow{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .prow .pn{font-weight:800}
+  .prow .pm{font-size:12px;color:var(--muted);margin-top:2px}
+  .prow .pqt{margin-left:auto;text-align:right}
+  .prow .pqt b{font-size:18px}
+  .prow .pqt .pv{font-size:13px;color:var(--green);font-weight:700}
+  .msgbtns{display:flex;gap:10px;margin-bottom:12px}
+  .msgbtns .btn{flex:1;line-height:1.25;text-align:center}
+  .msgbtns .btn small{font-weight:600;opacity:.7;font-size:11px}
+  #msgOut{width:100%;min-height:150px;border:1.5px solid var(--line);border-radius:14px;padding:14px;font-size:14px;font-family:inherit;line-height:1.5;color:var(--ink);background:#fff;resize:vertical;white-space:pre-wrap}
+  .msgactions{display:flex;gap:10px;margin-top:10px}
+  .msgactions .btn{flex:1}
   /* ---------- Empty ---------- */
   .empty{text-align:center;color:var(--muted);padding:48px 20px}
   .empty .e{font-size:46px;margin-bottom:10px}
@@ -153,12 +186,56 @@
     <h2 class="sec" id="histTitle">Vendas de hoje</h2>
     <div id="histList"></div>
   </section>
+
+  <!-- RELATORIO -->
+  <section class="view" id="v-rel">
+    <h2 class="sec">Período</h2>
+    <div class="chips" id="relChips">
+      <button data-r="hoje" class="on">Hoje</button>
+      <button data-r="ontem">Ontem</button>
+      <button data-r="semana">7 dias</button>
+      <button data-r="mes">Este mês</button>
+    </div>
+    <div class="daterow">
+      <div><label>De</label><input type="date" id="relFrom" /></div>
+      <div><label>Até</label><input type="date" id="relTo" /></div>
+    </div>
+
+    <div class="rcard">
+      <div class="rcard-h">💰 Financeiro <span id="relRange" class="rrange"></span></div>
+      <div class="rmoney">
+        <div><span class="l">Bruto vendido</span><span class="v" id="relBruto">R$ 0</span></div>
+        <div><span class="l">Taxa cartão (~<span id="relTaxaLbl">4,5</span>%)</span><span class="v neg" id="relTaxa">-R$ 0</span></div>
+        <div class="liq"><span class="l">Líquido estimado</span><span class="v" id="relLiq">R$ 0</span></div>
+      </div>
+      <div class="taxaset">
+        Taxa média do cartão:
+        <input id="relTaxaInput" inputmode="decimal" /> %
+        <button class="mini" onclick="window.__saveTaxa()">salvar</button>
+      </div>
+    </div>
+
+    <h2 class="sec">Por produto</h2>
+    <div id="relProdutos"></div>
+
+    <h2 class="sec">Gerar mensagem</h2>
+    <div class="msgbtns">
+      <button class="btn ghost" onclick="window.__msg('fornecedor')">📦 Fornecedor<br><small>só o que foi vendido</small></button>
+      <button class="btn ghost" onclick="window.__msg('financeiro')">💰 Financeiro<br><small>com valores</small></button>
+    </div>
+    <textarea id="msgOut" placeholder="A mensagem gerada aparece aqui…" readonly></textarea>
+    <div class="msgactions" id="msgActions" style="display:none">
+      <button class="btn primary" onclick="window.__copyMsg()">Copiar</button>
+      <button class="btn primary" style="background:#1aa06f" onclick="window.__waMsg()">WhatsApp</button>
+    </div>
+  </section>
 </main>
 
 <nav class="tabs">
   <button data-tab="vender" class="on"><span class="ic">🛒</span>Vender</button>
   <button data-tab="estoque"><span class="ic">📦</span>Estoque</button>
   <button data-tab="hist"><span class="ic">📊</span>Histórico</button>
+  <button data-tab="rel"><span class="ic">📄</span>Relatório</button>
 </nav>
 
 <!-- Modal produto -->
@@ -217,6 +294,11 @@ const $ = s => document.querySelector(s)
 const BRL = n => 'R$ ' + (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})
 const BRLshort = n => { n=Number(n)||0; return n>=1000 ? 'R$ '+(n/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k' : BRL(n) }
 const startOfToday = () => { const d=new Date(); d.setHours(0,0,0,0); return d.toISOString() }
+
+// taxa media do cartao (estimativa) — guardada no aparelho
+const getTaxa = () => { const v=parseFloat(localStorage.getItem('taxaCartao')); return isNaN(v)?4.5:v }
+const setTaxa = v => localStorage.setItem('taxaCartao', String(v))
+const liquido = bruto => (Number(bruto)||0) * (1 - getTaxa()/100)
 
 function toast(msg, kind=''){
   const t=$('#toast'); t.textContent=msg; t.className='show '+kind
@@ -336,7 +418,7 @@ function renderHist(){
     return `<div class="hrow">
       <div>
         <div class="hn">${esc(v.nome_produto)} ${v.qtd>1?'×'+v.qtd:''}</div>
-        <div class="ht">${t}</div>
+        <div class="ht">${t} · líq. ~${BRL(liquido(v.total))}</div>
       </div>
       <div class="hv">${BRL(v.total)}</div>
       <div class="acts">
@@ -432,7 +514,8 @@ window.deleteProduct = async ()=>{
 window.__tab = (name)=>{
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'))
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===name))
-  $('#v-'+(name==='hist'?'hist':name)).classList.add('on')
+  $('#v-'+name).classList.add('on')
+  if(name==='rel') initRel()
 }
 document.querySelectorAll('nav.tabs button').forEach(b=> b.onclick=()=>window.__tab(b.dataset.tab))
 
@@ -442,6 +525,106 @@ document.querySelectorAll('.period button').forEach(b=> b.onclick=()=>{
   document.querySelectorAll('.period button').forEach(x=>x.classList.toggle('on',x===b))
   loadVendas()
 })
+
+// ---------- relatorio ----------
+let relVendas = []
+let relInit = false
+const dayStartISO = ymd => new Date(ymd+'T00:00:00').toISOString()
+const dayEndISO   = ymd => new Date(ymd+'T23:59:59.999').toISOString()
+const fmtD = ymd => { const [y,m,d]=ymd.split('-'); return `${d}/${m}/${y}` }
+
+function initRel(){
+  if(!relInit){
+    relInit = true
+    $('#relTaxaInput').value = String(getTaxa()).replace('.',',')
+    document.querySelectorAll('#relChips button').forEach(b=> b.onclick=()=>applyChip(b))
+    $('#relFrom').onchange = ()=>{ clearChip(); loadRel() }
+    $('#relTo').onchange   = ()=>{ clearChip(); loadRel() }
+    setChipRange('hoje')
+  }
+  loadRel()
+}
+function clearChip(){ document.querySelectorAll('#relChips button').forEach(x=>x.classList.remove('on')) }
+function applyChip(b){
+  document.querySelectorAll('#relChips button').forEach(x=>x.classList.toggle('on',x===b))
+  setChipRange(b.dataset.r); loadRel()
+}
+function setChipRange(r){
+  const now=new Date(), t=now.toLocaleDateString('en-CA')
+  let from=t, to=t
+  if(r==='ontem'){ const d=new Date(now); d.setDate(d.getDate()-1); from=to=d.toLocaleDateString('en-CA') }
+  else if(r==='semana'){ const d=new Date(now); d.setDate(d.getDate()-6); from=d.toLocaleDateString('en-CA') }
+  else if(r==='mes'){ const d=new Date(now.getFullYear(),now.getMonth(),1); from=d.toLocaleDateString('en-CA') }
+  $('#relFrom').value=from; $('#relTo').value=to
+}
+async function loadRel(){
+  const f=$('#relFrom').value, t=$('#relTo').value
+  if(!f||!t) return
+  const { data, error } = await sb.from('vendas').select('*')
+    .gte('created_at',dayStartISO(f)).lte('created_at',dayEndISO(t)).order('created_at')
+  if(error){ toast('Erro no relatório','err'); console.error(error); return }
+  relVendas = data||[]; renderRel()
+}
+function aggRel(){
+  const m={}
+  for(const v of relVendas){
+    const k=v.produto_id||('n:'+v.nome_produto)
+    if(!m[k]) m[k]={nome:v.nome_produto, qtd:0, bruto:0, produto_id:v.produto_id}
+    m[k].qtd+=Number(v.qtd); m[k].bruto+=Number(v.total)
+  }
+  return Object.values(m).sort((a,b)=>b.qtd-a.qtd)
+}
+function renderRel(){
+  const tx=getTaxa()
+  const bruto=relVendas.reduce((s,v)=>s+Number(v.total),0)
+  const taxa=bruto*tx/100, liq=bruto-taxa
+  $('#relTaxaLbl').textContent=String(tx).replace('.',',')
+  $('#relBruto').textContent=BRL(bruto)
+  $('#relTaxa').textContent='-'+BRL(taxa)
+  $('#relLiq').textContent=BRL(liq)
+  const f=$('#relFrom').value, t=$('#relTo').value
+  $('#relRange').textContent = f===t ? fmtD(f) : fmtD(f)+' a '+fmtD(t)
+  const ag=aggRel(), l=$('#relProdutos')
+  if(!ag.length){ l.innerHTML=`<div class="empty"><div class="e">📄</div>Nenhuma venda no período.</div>` }
+  else l.innerHTML=ag.map(p=>{
+    const prod=produtos.find(x=>x.id===p.produto_id)
+    const rest=prod?` · restam ${prod.estoque}`:''
+    return `<div class="prow"><div><div class="pn">${esc(p.nome)}</div><div class="pm">${p.qtd} vendidas${rest}</div></div>
+      <div class="pqt"><b>${p.qtd}</b><div class="pv">${BRL(p.bruto)}</div></div></div>`
+  }).join('')
+  $('#msgOut').value=''; $('#msgActions').style.display='none'
+}
+window.__saveTaxa=()=>{
+  const v=parseFloat($('#relTaxaInput').value.replace(',','.'))
+  if(isNaN(v)||v<0||v>100){ toast('Taxa inválida','err'); return }
+  setTaxa(v); toast('Taxa salva','ok'); renderRel(); renderHist()
+}
+window.__msg=(tipo)=>{
+  const f=$('#relFrom').value, t=$('#relTo').value
+  const per = f===t ? fmtD(f) : `${fmtD(f)} a ${fmtD(t)}`
+  const ag=aggRel()
+  if(!ag.length){ toast('Nada pra gerar no período','err'); return }
+  let msg
+  if(tipo==='fornecedor'){
+    const totUn=ag.reduce((s,p)=>s+p.qtd,0)
+    msg = `📦 Vendas ${per}\n\n` + ag.map(p=>`• ${p.nome}: ${p.qtd}`).join('\n') + `\n\nTotal de itens: ${totUn}`
+  } else {
+    const bruto=relVendas.reduce((s,v)=>s+Number(v.total),0)
+    const tx=getTaxa(), taxa=bruto*tx/100, liq=bruto-taxa
+    msg = `💰 Relatório ${per}\n\n` + ag.map(p=>`• ${p.nome} ×${p.qtd} — ${BRL(p.bruto)}`).join('\n')
+        + `\n\nBruto: ${BRL(bruto)}\nTaxa cartão (~${String(tx).replace('.',',')}%): -${BRL(taxa)}\nLíquido estimado: ${BRL(liq)}`
+  }
+  $('#msgOut').value=msg; $('#msgActions').style.display='flex'
+}
+window.__copyMsg=async()=>{
+  const txt=$('#msgOut').value; if(!txt) return
+  try{ await navigator.clipboard.writeText(txt); toast('Copiado','ok') }
+  catch{ const o=$('#msgOut'); o.removeAttribute('readonly'); o.select(); document.execCommand('copy'); o.setAttribute('readonly',''); toast('Copiado','ok') }
+}
+window.__waMsg=()=>{
+  const txt=$('#msgOut').value; if(!txt) return
+  window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank')
+}
 
 // ---------- util ----------
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) }
