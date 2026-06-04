@@ -148,6 +148,17 @@
   .field input:focus{outline:none;border-color:var(--wine)}
   .sheet .actions{display:flex;gap:10px;margin-top:8px}
   .sheet .actions .btn{flex:1}
+  /* ---------- Avatar (emoji/foto) ---------- */
+  .av{display:flex;align-items:center;justify-content:center;border-radius:14px;background:var(--bg);overflow:hidden;background-size:cover;background-position:center;flex-shrink:0;line-height:1}
+  .avc{width:58px;height:58px;font-size:34px;margin:0 auto 2px}
+  .avr{width:46px;height:46px;font-size:26px}
+  .avpick{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .avprev{width:66px;height:66px;border-radius:16px;border:1.5px solid var(--line);background:var(--bg) center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden;flex-shrink:0}
+  .avbtns{display:flex;flex-wrap:wrap;gap:8px}
+  .avbtns .btn{padding:9px 13px;font-size:13px}
+  .emojigrid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;max-height:208px;overflow:auto;margin:-4px 0 14px;padding:8px;background:var(--bg);border-radius:12px}
+  .emojigrid button{border:0;background:transparent;font-size:25px;padding:7px 0;border-radius:9px;line-height:1}
+  .emojigrid button:active{background:#fff}
   .danger-link{color:var(--red);background:none;border:0;font-weight:700;font-size:14px;margin-top:14px;width:100%;padding:10px}
   /* ---------- Toast ---------- */
   #toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:90vw;text-align:center}
@@ -251,6 +262,20 @@
   <div class="sheet">
     <h3 id="sheetTitle">Novo produto</h3>
     <input type="hidden" id="pid" />
+    <input type="hidden" id="f_imagem" />
+    <input type="file" id="f_foto" accept="image/*" capture="environment" hidden />
+    <div class="field">
+      <label>Imagem (ajuda a achar rápido)</label>
+      <div class="avpick">
+        <div class="avprev" id="avPrev"><span>📦</span></div>
+        <div class="avbtns">
+          <button class="btn ghost" type="button" onclick="window.__pickEmoji()">😊 Emoji</button>
+          <button class="btn ghost" type="button" onclick="document.getElementById('f_foto').click()">📷 Foto</button>
+          <button class="btn ghost" id="avClear" type="button" style="display:none" onclick="window.__clearAv()">Limpar</button>
+        </div>
+      </div>
+      <div class="emojigrid" id="emojiGrid" style="display:none"></div>
+    </div>
     <div class="field">
       <label>Nome</label>
       <input id="f_nome" placeholder="Ex: Água 500ml" autocomplete="off" />
@@ -337,6 +362,48 @@ function renderStats(){
   $('#stStock').textContent = est
 }
 
+// ---------- avatar (emoji / foto) ----------
+const EMOJIS = ['🥤','🧃','🧋','☕','🍵','🫖','🍶','🍷','🍺','🍻','🥂','🍸','🍹','🧉','🥛','🍼','💧','🚰','🧊','🍾',
+  '🫗','🧴','🍫','🍬','🍭','🍩','🍪','🎂','🧁','🥧','🍰','🍮','🍿','🥨','🥯','🥐','🍞','🥖','🧀','🥪',
+  '🌭','🍔','🍟','🍕','🌮','🌯','🥙','🧆','🥗','🍝','🍜','🍲','🍱','🍣','🍙','🍳','🥚','🥓','🍤','🧂',
+  '🍎','🍏','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🥦','🥕',
+  '🌽','🌶️','🫑','🥒','🥬','🧄','🧅','🥔','🍠','🥜','🌰','🍄',
+  '🛒','🛍️','🎁','📦','🧼','🧻','🧽','🪣','🔋','🕯️',
+  '👕','👖','🧢','👜','🎒','🩴','🕶️','⛱️','🏖️','🌊','🐚','☀️','🔥','❄️','⭐','✨']
+
+function avatarHTML(p, kind='card'){
+  const v = (p && p.imagem) || ''
+  const cls = kind==='row' ? 'av avr' : 'av avc'
+  if(v.startsWith('data:')||v.startsWith('http')) return `<span class="${cls}" style="background-image:url(${v})"></span>`
+  return `<span class="${cls}">${v||'📦'}</span>`
+}
+function renderAvPrev(){
+  const v=$('#f_imagem').value, el=$('#avPrev'), clr=$('#avClear')
+  if(!v){ el.style.backgroundImage=''; el.innerHTML='<span>📦</span>'; clr.style.display='none'; return }
+  clr.style.display='inline-flex'
+  if(v.startsWith('data:')||v.startsWith('http')){ el.innerHTML=''; el.style.backgroundImage=`url(${v})` }
+  else { el.style.backgroundImage=''; el.innerHTML=`<span>${v}</span>` }
+}
+window.__pickEmoji=()=>{
+  const g=$('#emojiGrid')
+  if(!g.dataset.built){ g.innerHTML=EMOJIS.map(e=>`<button type="button" onclick="window.__setEmoji('${e}')">${e}</button>`).join(''); g.dataset.built='1' }
+  g.style.display = g.style.display==='none' ? 'grid' : 'none'
+}
+window.__setEmoji=(e)=>{ $('#f_imagem').value=e; renderAvPrev(); $('#emojiGrid').style.display='none' }
+window.__clearAv=()=>{ $('#f_imagem').value=''; renderAvPrev() }
+// foto: redimensiona p/ thumb pequeno antes de salvar
+document.getElementById('f_foto').onchange = (ev)=>{
+  const f=ev.target.files && ev.target.files[0]; if(!f) return
+  const rd=new FileReader()
+  rd.onload=()=>{ const img=new Image(); img.onload=()=>{
+    const max=180; let w=img.width, h=img.height; const s=Math.min(max/w,max/h,1)
+    const c=document.createElement('canvas'); c.width=Math.round(w*s); c.height=Math.round(h*s)
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height)
+    $('#f_imagem').value=c.toDataURL('image/jpeg',0.72); renderAvPrev()
+  }; img.src=rd.result }
+  rd.readAsDataURL(f); ev.target.value=''
+}
+
 // ---------- render: vender ----------
 function stockBadge(p){
   if(p.estoque<=0) return '<span class="badge zero">Esgotado</span>'
@@ -353,6 +420,7 @@ function renderSell(){
     const q = qtySel[p.id]||1
     const out = p.estoque<=0
     return `<div class="pcard">
+      ${avatarHTML(p,'card')}
       <div>
         <div class="pname">${esc(p.nome)}</div>
         <div class="pprice">${BRL(p.preco)}</div>
@@ -396,6 +464,7 @@ function renderStock(){
   if(!produtos.length){ l.innerHTML=`<div class="empty"><div class="e">📦</div>Nenhum produto cadastrado.</div>`; return }
   l.innerHTML = produtos.map(p=>`
     <div class="irow">
+      ${avatarHTML(p,'row')}
       <div class="info">
         <div class="n">${esc(p.nome)}</div>
         <div class="m">${BRL(p.preco)} · ${stockBadge(p)}</div>
@@ -489,6 +558,9 @@ window.openProduct = (p=null)=>{
   $('#f_nome').value = p?p.nome:''
   $('#f_preco').value = p?String(p.preco).replace('.',','):''
   $('#f_estoque').value = p?p.estoque:''
+  $('#f_imagem').value = p&&p.imagem?p.imagem:''
+  $('#emojiGrid').style.display='none'
+  renderAvPrev()
   $('#estoqueLbl').textContent = p?'Estoque atual (ajustar)':'Quantidade em estoque'
   $('#delBtn').style.display = p?'block':'none'
   $('#scrim').classList.add('on')
@@ -500,12 +572,13 @@ window.saveProduct = async ()=>{
   const nome=$('#f_nome').value.trim()
   const preco=parseFloat($('#f_preco').value.replace(/\./g,'').replace(',','.'))||0
   const estoque=parseInt($('#f_estoque').value,10)||0
+  const imagem=$('#f_imagem').value||null
   if(!nome){ toast('Digite o nome','err'); return }
   let error
   if(id){
-    ;({ error } = await sb.from('produtos').update({ nome, preco, estoque }).eq('id',id))
+    ;({ error } = await sb.from('produtos').update({ nome, preco, estoque, imagem }).eq('id',id))
   } else {
-    ;({ error } = await sb.from('produtos').insert({ nome, preco, estoque, estoque_inicial:estoque, ordem:produtos.length }))
+    ;({ error } = await sb.from('produtos').insert({ nome, preco, estoque, estoque_inicial:estoque, imagem, ordem:produtos.length }))
   }
   if(error){ toast('Erro ao salvar','err'); console.error(error); return }
   toast('Produto salvo','ok'); closeSheet(); loadProdutos()
@@ -597,7 +670,7 @@ function renderRel(){
   else l.innerHTML=ag.map(p=>{
     const prod=produtos.find(x=>x.id===p.produto_id)
     const rest=prod?` · restam ${prod.estoque}`:''
-    return `<div class="prow"><div><div class="pn">${esc(p.nome)}</div><div class="pm">${p.qtd} vendidas${rest}</div></div>
+    return `<div class="prow">${avatarHTML(prod||{imagem:''},'row')}<div><div class="pn">${esc(p.nome)}</div><div class="pm">${p.qtd} vendidas${rest}</div></div>
       <div class="pqt"><b>${p.qtd}</b><div class="pv">${BRL(p.bruto)}</div></div></div>`
   }).join('')
   $('#msgOut').value=''; $('#msgActions').style.display='none'
