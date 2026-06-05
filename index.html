@@ -687,8 +687,20 @@ window.__msg=(tipo)=>{
   if(!ag.length){ toast('Nada pra gerar no período','err'); return }
   let msg
   if(tipo==='fornecedor'){
-    const totUn=ag.reduce((s,p)=>s+p.qtd,0)
-    msg = `📦 Vendas ${per}\n\n` + ag.map(p=>`• ${p.nome}: ${p.qtd}`).join('\n') + `\n\nTotal de itens: ${totUn}`
+    const soldMap={}; ag.forEach(p=>{ if(p.produto_id) soldMap[p.produto_id]=p.qtd })
+    const items=produtos.filter(p=>(Number(p.estoque_inicial)||0)>0 || soldMap[p.id])
+    if(!items.length){ toast('Sem produtos','err'); return }
+    const lines=items.map(p=>{
+      const ent=Number(p.estoque_inicial)||0, rest=Number(p.estoque)||0, said=Math.max(0,ent-rest)
+      const pct=ent>0?Math.round(said/ent*100):0
+      const venP=soldMap[p.id]||0
+      return `• ${p.nome}: ${venP} no período · entrada ${ent}, restam ${rest} (${pct}% vendido)`
+    })
+    const Tent=items.reduce((s,p)=>s+(Number(p.estoque_inicial)||0),0)
+    const Trest=items.reduce((s,p)=>s+(Number(p.estoque)||0),0)
+    const Tsaid=Math.max(0,Tent-Trest), Tpct=Tent>0?Math.round(Tsaid/Tent*100):0
+    msg = `📦 EcoBúzios ${per}\n\n` + lines.join('\n')
+        + `\n\nTotal: entrada ${Tent}, vendidas ${Tsaid} (${Tpct}%), restam ${Trest}`
   } else {
     const bruto=relVendas.reduce((s,v)=>s+Number(v.total),0)
     const tx=getTaxa(), taxa=bruto*tx/100, liq=bruto-taxa
