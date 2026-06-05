@@ -680,33 +680,42 @@ window.__saveTaxa=()=>{
   if(isNaN(v)||v<0||v>100){ toast('Taxa inválida','err'); return }
   setTaxa(v); toast('Taxa salva','ok'); renderRel(); renderHist()
 }
-window.__msg=(tipo)=>{
+window.__msg=async (tipo)=>{
   const f=$('#relFrom').value, t=$('#relTo').value
   const per = f===t ? fmtD(f) : `${fmtD(f)} a ${fmtD(t)}`
-  const ag=aggRel()
-  if(!ag.length){ toast('Nada pra gerar no período','err'); return }
-  let msg
-  if(tipo==='fornecedor'){
-    const soldMap={}; ag.forEach(p=>{ if(p.produto_id) soldMap[p.produto_id]=p.qtd })
-    const items=produtos.filter(p=>(Number(p.estoque_inicial)||0)>0 || soldMap[p.id])
-    if(!items.length){ toast('Sem produtos','err'); return }
-    const lines=items.map(p=>{
-      const ent=Number(p.estoque_inicial)||0, rest=Number(p.estoque)||0, said=Math.max(0,ent-rest)
-      const pct=ent>0?Math.round(said/ent*100):0
-      const venP=soldMap[p.id]||0
-      return `• ${p.nome}: ${venP} no período · entrada ${ent}, restam ${rest} (${pct}% vendido)`
-    })
-    const Tent=items.reduce((s,p)=>s+(Number(p.estoque_inicial)||0),0)
-    const Trest=items.reduce((s,p)=>s+(Number(p.estoque)||0),0)
-    const Tsaid=Math.max(0,Tent-Trest), Tpct=Tent>0?Math.round(Tsaid/Tent*100):0
-    msg = `📦 EcoBúzios ${per}\n\n` + lines.join('\n')
-        + `\n\nTotal: entrada ${Tent}, vendidas ${Tsaid} (${Tpct}%), restam ${Trest}`
-  } else {
+
+  // ---- FINANCEIRO (com valores, do período) ----
+  if(tipo==='financeiro'){
+    const ag=aggRel()
+    if(!ag.length){ toast('Nada pra gerar no período','err'); return }
     const bruto=relVendas.reduce((s,v)=>s+Number(v.total),0)
     const tx=getTaxa(), taxa=bruto*tx/100, liq=bruto-taxa
-    msg = `💰 Relatório ${per}\n\n` + ag.map(p=>`• ${p.nome} ×${p.qtd} — ${BRL(p.bruto)}`).join('\n')
+    const msg = `💰 EcoBúzios — Financeiro\n${per}\n\n` + ag.map(p=>`• ${p.nome} ×${p.qtd} — ${BRL(p.bruto)}`).join('\n')
         + `\n\nBruto: ${BRL(bruto)}\nTaxa cartão (~${String(tx).replace('.',',')}%): -${BRL(taxa)}\nLíquido estimado: ${BRL(liq)}`
+    $('#msgOut').value=msg; $('#msgActions').style.display='flex'
+    return
   }
+
+  // ---- FORNECEDOR (estoque: entrou / vendeu % / resta) ----
+  // vendido total por produto vem das vendas reais (fonte da verdade)
+  const { data, error } = await sb.from('vendas').select('produto_id,qtd')
+  if(error){ toast('Erro ao gerar','err'); console.error(error); return }
+  const sold={}; (data||[]).forEach(v=>{ if(v.produto_id) sold[v.produto_id]=(sold[v.produto_id]||0)+Number(v.qtd) })
+  const items=produtos.map(p=>{
+    const vendeu=sold[p.id]||0, resta=Number(p.estoque)||0, entrou=vendeu+resta
+    const pct=entrou>0?Math.round(vendeu/entrou*100):0
+    return {nome:p.nome, entrou, vendeu, resta, pct}
+  }).filter(x=>x.entrou>0)
+  if(!items.length){ toast('Sem produtos','err'); return }
+  const Tent=items.reduce((s,x)=>s+x.entrou,0)
+  const Tven=items.reduce((s,x)=>s+x.vendeu,0)
+  const Tres=items.reduce((s,x)=>s+x.resta,0)
+  const Tpct=Tent>0?Math.round(Tven/Tent*100):0
+  let msg = `📦 EcoBúzios — Estoque (${fmtD(t)})\n`
+  for(const x of items){
+    msg += `\n${x.nome}\n   Entrou: ${x.entrou}   Vendeu: ${x.vendeu} (${x.pct}%)   Resta: ${x.resta}`
+  }
+  msg += `\n\n— — —\nTOTAL\n   Entrou: ${Tent}   Vendeu: ${Tven} (${Tpct}%)   Resta: ${Tres}`
   $('#msgOut').value=msg; $('#msgActions').style.display='flex'
 }
 window.__copyMsg=async()=>{
